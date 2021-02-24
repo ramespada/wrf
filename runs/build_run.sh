@@ -2,7 +2,6 @@
 #=========================================================#
 #   Prepara directorio para corrida de WRF                #
 #* * * * * * * * * * * * ** * * * * * * * * * * * * * * * #
-exp_name=mar2009Bahia
 #INPUTS:
 dir=/home/ramiroespada
 #src:
@@ -15,24 +14,53 @@ geog_path=${dir}/stage/data/WPS_GEOG
 namelist_path=${dir}/WRF/misc/namelists
 tables_path=${dir}/WRF/misc/tablas
 sbatch_path=${dir}/WRF/misc/sbatch
-#dates
-start_date='2009-03-14_00:00:00'   #%Y-%m-%D_%H:%M:%D
-end_date='2009-03-15_00:00:00'      #%Y-%m-%D_%H:%M:%D 
+
+#######################
+##Bahía  16 marzo 2009 
+#exp_name=Bahia16mar2009;cdate="2009-03-16 00:00:00";clat=-39.704213;clon=-61.833573;DX=500;DY=500
+
+#Patagonia 28 marzo 2009
+exp_name=Patagonia28mar2009;cdate="2009-03-28 00:00:00";clat=-43.004952;clon=-64.153677;DX=800;DY=1000
+
+##Madryn 05 de abril 2009
+#exp_name=Madryn05abr2009;cdate="2009-04-05 00:00:00";clat=-43.004952;clon=-64.153677;DX=800;DY=1000
+#
+##Marchiquita + Bahía  05 de agosto 2009.
+#exp_name=MarChiquita05ago2009;cdate="2009-08-05 00:00:00";clat=-30.562957;clon=-62.506265;DX=400;DY=400
+#
+##Cuyo  11-12 julio 2010
+#exp_name=Cuyo11jul2010;cdate="2010-07-11 00:00:00";clat=-32.951274;clon=-68.854580;DX=500;DY=700
+#
+##Munster 03 noviembre 2016
+#exp_name=Munster03nov2016;cdate="2016-09-03 00:00:00";clat=-43.004952;clon=-64.153677;DX=850;DY=1000
+#
+##Antofagasta 13 septiembre 2017
+#exp_name=Antofagasta13sep2017;cdate="2017-09-10 00:00:00";clat=-22.896295;clon=-67.589588;DX=600;DY=600
+######################
+
+dx=25000;
+dy=25000;
+nx=$(bc -l <<< "scale=5;o=$DX*1000/$dx;scale=0;o/1.0") # == nx
+ny=$(bc -l <<< "scale=5;o=$DY*1000/$dy;scale=0;o/1.0") # == ny
+
+
+start_date=$(TZ=0 date -d "${cdate}+0 - 9 hours" '+%Y-%m-%d_%H:%M:%S')  #ojo, chequiar dispo de meteo-data
+  end_date=$(TZ=0 date -d "${cdate}+0 + 2 days " '+%Y-%m-%d_%H:%M:%S')
 
 add2namelist="
-e_we  =  50,
-e_sn  =  50,  
+e_we  = $nx,
+e_sn  = $ny,  
+ref_lat   = ${clat},
+ref_lon   = ${clon},
+dx        = ${dx},
+dy        = ${dy},
+time_step = 120,
 geog_data_res = 'default',
-dx        = 15000,
-dy        = 15000,
 map_proj  = 'lambert',
-ref_lat   = -38.73,
-ref_lon   = -62.23,
 truelat1  = -33.721,
 truelat2  = -33.721,
 stand_lon = -59.834,
 interval_seconds = 21600,
-time_step = 260,
 num_metgrid_levels = 27,
 ra_lw_physics=1, ra_sw_physics = 2,radt=30,
 cu_physics=5,mp_physics=28,bl_pbl_physics=1,
