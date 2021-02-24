@@ -1,0 +1,51 @@
+####======================================================#####
+## WRF
+tar -xvf WRF...
+cd WRF
+
+./clean # (si ya se intentó compilar antes)
+
+DIR=/home/ramiroespada/libs/
+export NETCDFPATH=$DIR/netcdf4.4
+export NETCDF=$DIR/netcdf4.4
+export HDF5=$DIR/hdf5
+export MPICH=$DIR/mpich
+export ZLIB=$DIR/zlib-1.2.7
+export SLIB=$DIR/szip-2.1
+export YACC=$DIR/byacc
+export FLEX_LIB_DIR=$DIR/flex/lib
+export JASPERINC=$DIR/grib2/include
+export JASPERLIB=$DIR/grib2/lib
+
+export PATH=$MPICH/bin:$NETCDF/bin:$HDF5/bin:$PATH
+export LD_LIBRARY_PATH=$MPICH/lib:$NETCDF/lib:$HDF5/lib$LD_LIBRARY_PATH
+
+export NETCDF4=1 
+unset NETCDF_classic
+export WRFIO_NCD_LARGE_FILE_SUPPORT=1
+#SIN QUIMICA:
+export J="-j 4"
+export WRF_CHEM=0
+export WRF_KPP=0
+export WRF_EM_CORE=1
+export WRF_NMM_CORE=0
+
+#CON QUIMICA:
+ export J="-j 4"
+ export WRFIO_NCD_LARGE_FILE_SUPPORT=1
+ export WRF_CHEM=1
+ export WRF_KPP=0
+ export WRF_EM_CORE=1
+ export WRF_NMM_CORE=0
+
+./configure # elegir opt=34, y luego opt=1
+
+	#SI NO DETECTA NETCDF:
+	# modificar archivo de configure:
+	#if [ “`uname`” = “Darwin” ] ; then
+	#ans=“`whereis nf-config`”
+	#elif [ “`uname`” = “Linux” ] ; then
+	#ans=“`which nf-config`”
+	#else
+./compile em_real >& log.compile
+

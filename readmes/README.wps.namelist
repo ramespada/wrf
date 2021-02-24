@@ -1,0 +1,145 @@
+#***************************************************
+# WPS (WRF Pre-processing System)
+
+Se utiliza para simulaciones "real". Sus funciones son:
+   + Definir dominio de simulación.
+   + Interpolar datos de superficie.
+   + "desgribbear" e interpolar datos meteorologicos.
+
+Datos necesarios:
+   + GRIB 1/2 
+   + Datasets terrestres de USGS (24 categorias) y MODIS (20 categorias).
+   + Modelo de elevación (GMTED2010)
+   + mapas de suelos (FAO)
+   + greenfrac, LAI, albedo, soil temp, etc. (MODIS)
+
+Programas principales:
+ + geogrid.exe
+ + ungrib.exe
+ + metgrid.exe
+
+Las especificaciones para la corrida se definen en
+el archivo "namelist.wps".
+
+Cada programa tiene su namelist exclusiva (llamados
+"geogrid", "ungrib" or "metgrid"),y también hay un
+ namelist común para los tres (llamado "share").
+
+#==================================================
+## share
+---------
+&share
+ wrf_core='ARW',    !str: core dinámico ('ARW','NNM')
+ max_dom=,	    !int: # de dominios
+ start_date=        !l,str: 'YYYY-MM-DD_HH:mm:ss': fecha de inicio de c/dominio (sep x comas)
+ end_date=	    !idem.
+ interval_seconds=  !int: tiempo en seg. entre archivos dinámicos (meteo)
+ active_grid=true   !l,bool: dominio activo (true/false).
+ io_form_geogrid=2, !int: formato de salida (1:binario, 2:netcdf, 3:grib1)
+ io_form_metgrid=2, !int: 1:bin,2:nc,3:grib1
+
+ opt_output_from_geogrid_path='./' !<str: path a output de geogrid
+ opt_output_from_metgrid_path=     !str:  path de outputs
+ 
+debug_level=0,     !int: nivel de mensajes que se muestran en la corrida (opciones: 0, 1)
+/
+
+*'l,': indica que es una lista de max_dom inputs separados por ",".
+
+## geogrid
+-----------
+1. Define dominio horizontal
+2. Interpola horizontalmente datos estáticos 
+3. Output conforms to the WRF I/O API
+
+&geogrid
+ parent_ID=1,	!l, int: id de niveles de anidado (el dominio madre es =1)
+ parent_grid_ratio= !l, int: tamaño relativo del dominio respecto al dominio madre.
+ i_parent_start=l, int: ubicación-x del vértice inferior izquierdo del dominio (dominio madre =1)
+ j_parent_start=l, int: idem (ubicacion y)
+ s_we=1, !l, int: todos deben estar seteados en 1.
+ e_we=	 !l, int: n*parent_grid_ratio + 1 (para algún "n")
+ s_sn=1, !l, int: todos seteados en 1.
+ e_sn=   !l, int: n*parent_grid_ratio + 1 (para algún "n")
+ geog_data_res= !<l+ str: indica resolución (segun especif geogridTBL)
+
+ dx=	!real: distancia-x de celda (en m ó grad según la proyección)
+ dy=	!real: distancia-y de celda
+ map_proj= !str: proyeccion : 'lambert','polar','mercator','lat-lon'
+	
+ ref_lat=    #start epecificaciones de proyeccion
+ ref_lon=
+ ref_x=
+ ref_y=
+ truelat1=
+ truelat2=
+ stand_lon=
+ pole_lat=
+ pole_lon=   #end especif. proyeccion
+
+ geog_data_path='' !path a datos estáticos (chequiar que sean coherentes con los path dentro de "GEOGRID.TBL"
+ opt_gegorid_tbl_path='./geogrid/' !path a GEOGRID.TBL
+/
+
+
+ungrib
+--------
+1) Decodifica archivos Grib (1 y 2)
+2) Uses tablas para decidir que variables extraer
+3) Tiene soporte para coordenadas verticales isobáricas y generalizadas
+4) Output is in a non-WRF-I/O-API form, referred to as an
+   intermediate format
+
+&ungrib
+ out_format=   !str: 'WPS','SI','MM5'
+ prefix=       !str: prefijo de archivos de salida.
+ add_lvls=     !bool: para pedirle que interpole a niveles verticales definidos en namelist adicional "PLVL"
+ interp_type=  !int 0:interp. lin. presion, 1:interp. lin. log presion
+ new_plvl=     !l, int:  si add_lvls=true, entonces indicar niveles a agregar.
+ pmin=	       !real : minimo nivel de presion.
+/
+
+
+metgrid
+--------
+1) Procesa los campos de salida de geogrid y ungrib
+2) Interpola horizontalmente los datos meteorológicos
+3) Output conforms to WRF I/O API
+
+&metgrid
+ fg_name=		!str:  path/nombre de archivos desgribeados dinámicos
+ constants_name= 	!str:  path/nombre de archivos desgribeados estáticos
+ opt_metgrid_tbl_path=	!str:  path a METGRID.TBL
+ process_only_bdy= 	!int:  boundary rows/cols a ser procesados para periodos subsiguientes al inicial.
+/
+
+
+
+
+=====================================================
+geogrid.exe
+-----------
+- edit namelist.wps (&share and &geogrid sections)
+- make sure the correct GEOGRID.TBL is used (ls -l geogrid/GEOGRID.TBL*)
+- type 'geogrid.exe' to run
+- check output in geogrid.log
+
+ungrib.exe
+----------
+- edit namelist.wps for start_date and end_date, output file prefix 
+  (&share and &ungrib sections)
+- link correct Vtable:
+  ls -l ungrib/Variable_Tables
+  For example, for NCEP GFS (or AVN, FNL) data,
+  ln -sf ungrib/Variable_Tables/Vtable.GFS Vtable
+- link grib data files:
+  link_grib.csh /data-directory/file*
+- type 'ungrib.exe >& ungrib.out' to run
+- check output in ungrib.log and ungrib.out
+
+metgrid.exe
+-----------
+- edit namelist.wps (&share and &metgrid sections)
+- make sure the correct METGRID.TBL is used (ls -l metgrid/METGRID.TBL*)
+- type 'metgrid.exe' to run
+- check output in metgrid.log
